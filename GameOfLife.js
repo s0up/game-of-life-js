@@ -1,14 +1,20 @@
+/*
+  Implement Conway's game of life with standard rules (B3/S23)
+*/
+
 class GameOfLife {
-  constructor (x, y, tickInterval = 100) {
+  constructor (x, y, initiallyRandom = true, tickInterval = 100) {
     this.grid = []
 
     for (let i = 0; i <= y; i++) {
       this.grid.push(Array(x).fill(0))
     }
 
-    this.eachCell((x, y) => {
-      this.grid[y][x] = Math.round(Math.random())
-    })
+    if (initiallyRandom) {
+      this.eachCell((x, y) => {
+        this.grid[y][x] = Math.round(Math.random())
+      })
+    }
 
     this.tickInterval = tickInterval
   }
@@ -24,39 +30,29 @@ class GameOfLife {
   }
 
   tick () {
-    const newGrid = this.grid.map(g => [...g]) // This is soooooo wrong
+    // Implement cellular automata B3/S23.
 
-    this.eachCell((x, y, val) => {
-      const neighbors = this.getNeighbors(x, y)
+    const proposedChanges = []
 
-      let alive = 0
+    this.eachCell((x, y, status) => {
+      const livingNeighbors = this.countLivingNeighbors(x, y)
 
-      neighbors.forEach(neighbor => {
-        if (neighbor[2] === 1) {
-          alive += 1
-        }
-      })
-
-      // Any live cell with fewer than two live neighbors dies, by underpopulation
-      if (val === 1 && alive < 2) {
-        newGrid[y][x] = 0
+      if (status === 1 &&
+          (livingNeighbors < 2 || livingNeighbors > 3)) {
+        proposedChanges.push([x, y, 0])
       }
 
-      // Any live cell with more than three live neighbors dies, as if by overpopulation.
-      if (val === 1 && alive > 3) {
-        newGrid[y][x] = 0
-      }
-
-      // Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
-      if (val === 0 && alive === 3) {
-        newGrid[y][x] = 1
+      if (status === 0 && livingNeighbors === 3) {
+        proposedChanges.push([x, y, 1])
       }
     })
 
-    this.grid = newGrid
+    proposedChanges.forEach(change => {
+      this.grid[change[1]][change[0]] = change[2]
+    })
   }
 
-  getNeighbors (x, y) {
+  countLivingNeighbors (x, y) {
     return [
       [x, y - 1], // N
       [x + 1, y - 1], // NE
@@ -69,7 +65,9 @@ class GameOfLife {
     ].filter(xy => {
       return xy[0] >= 0 && xy[0] < this.grid[0].length &&
         xy[1] >= 0 && xy[1] < this.grid.length
-    }).map(xy => xy.concat([this.grid[xy[1]][xy[0]]]))
+    }).reduce((count, neighbor) => {
+      return count + this.grid[neighbor[1]][neighbor[0]]
+    }, 0)
   }
 
   eachCell (fn) {
@@ -84,17 +82,21 @@ class GameOfLife {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
 
-  getGrid () {
+  getGridString () {
     let gridText = ''
     this.grid.forEach(y => {
       y.forEach(x => {
-        gridText += `${x !== 0 ? '*' : '  '}`
+        gridText += `${x !== 0 ? '*' : ' '}`
       })
 
       gridText += '\n'
     })
 
     return gridText
+  }
+
+  getGridArray () {
+    return this.grid
   }
 }
 
